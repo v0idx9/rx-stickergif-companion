@@ -1,0 +1,26 @@
+# Huge / local-only
+_ipa_extract/
+*.ipa
+*.zip
+
+# Theos build
+**/.theos/
+**/obj/
+*.deb
+
+# IDA next to dylibs
+*.id0
+*.id1
+*.id2
+*.id3
+*.nam
+*.til
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Editor
+.idea/
+.vscode/

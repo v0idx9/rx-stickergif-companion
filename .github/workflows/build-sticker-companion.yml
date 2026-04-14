@@ -1,0 +1,44 @@
+# Builds libRXStickerGifCompanion.dylib on GitHub's macOS runner — nothing to install on your PC.
+#
+# Push this folder as a GitHub repo → Actions → "Build RXStickerGifCompanion" → run workflow
+# (or push to main and it runs if RXStickerGifCompanion/ changed).
+# Download artifact → copy .dylib into TikTok.app/Frameworks/ → zip IPA → TrollStore.
+
+name: Build RXStickerGifCompanion
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - "RXStickerGifCompanion/**"
+      - ".github/workflows/build-sticker-companion.yml"
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Theos + iOS SDK
+        run: |
+          set -euo pipefail
+          THEOS="${RUNNER_TEMP}/theos"
+          echo "THEOS=$THEOS" >> "$GITHUB_ENV"
+          git clone --depth 1 --recursive https://github.com/theos/theos.git "$THEOS"
+          rm -rf "$THEOS/sdks"
+          git clone --depth 1 https://github.com/theos/sdks.git "$THEOS/sdks"
+
+      - name: Build tweak
+        run: |
+          set -euo pipefail
+          cd RXStickerGifCompanion
+          make clean
+          make
+          find . -name "*.dylib" -print
+
+      - name: Upload dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: RXStickerGifCompanion-dylib
+          path: RXStickerGifCompanion/**/*.dylib

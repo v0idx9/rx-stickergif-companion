@@ -1,0 +1,9 @@
+Package: ttmod.rxstickergifcompanion
+Name: RXStickerGifCompanion
+Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 14.0)
+Version: 0.0.1
+Architecture: iphoneos-arm64
+Description: Fixes saveMedia when file is GIF bytes but extension is wrong (RXIManager / BHIManager).
+Maintainer: local
+Author: local
+Section: Tweaks
