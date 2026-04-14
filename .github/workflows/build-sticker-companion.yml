@@ -40,8 +40,16 @@ jobs:
           make
           find . -name "*.dylib" -print
 
+      - name: Collect dylib for artifact
+        run: |
+          set -euo pipefail
+          D="$(find RXStickerGifCompanion -name '*.dylib' -type f | head -1)"
+          test -n "$D"
+          cp -f "$D" RXStickerGifCompanion/RXStickerGifCompanion.dylib
+          ls -la RXStickerGifCompanion/RXStickerGifCompanion.dylib
+
       - name: Upload dylib
         uses: actions/upload-artifact@v4
         with:
           name: RXStickerGifCompanion-dylib
-          path: RXStickerGifCompanion/**/*.dylib
+          path: RXStickerGifCompanion/RXStickerGifCompanion.dylib
