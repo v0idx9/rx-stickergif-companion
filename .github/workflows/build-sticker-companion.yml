@@ -29,6 +29,9 @@ jobs:
           rm -rf "$THEOS/sdks"
           git clone --depth 1 https://github.com/theos/sdks.git "$THEOS/sdks"
 
+      - name: Install ldid (Theos signs dylibs)
+        run: brew install ldid
+
       - name: Build tweak
         run: |
           set -euo pipefail
