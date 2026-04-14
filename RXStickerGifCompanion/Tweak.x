@@ -1,7 +1,10 @@
 #import <Foundation/Foundation.h>
 #import <ImageIO/ImageIO.h>
-#import <MobileCoreServices/MobileCoreServices.h>
 #import <objc/runtime.h>
+
+// UTIs (avoid MobileCoreServices kUTType* which may not be visible under Theos' default flags)
+static CFStringRef const kTsgUTIGIF = CFSTR("com.compuserve.gif");
+static CFStringRef const kTsgUTIPNG = CFSTR("public.png");
 
 // RXTikTok sometimes hands Photos a still extension (png/jpg) for animated stickers (e.g. animated WebP),
 // which looks like a "profile" still. We rewrite to a real multi-frame .gif when we can detect it.
@@ -45,8 +48,8 @@ static NSString *_tsg_lowerExtension(id fileextension) {
 
 static BOOL _tsg_typeAllowsMultiFrameExport(CFStringRef type) {
     if (!type) return NO;
-    if (CFStringCompare(type, kUTTypeGIF, 0) == kCFCompareEqualTo) return YES;
-    if (CFStringCompare(type, kUTTypePNG, 0) == kCFCompareEqualTo) return YES;
+    if (CFStringCompare(type, kTsgUTIGIF, 0) == kCFCompareEqualTo) return YES;
+    if (CFStringCompare(type, kTsgUTIPNG, 0) == kCFCompareEqualTo) return YES;
     if (CFStringCompare(type, CFSTR("public.webp"), 0) == kCFCompareEqualTo) return YES;
     if (CFStringCompare(type, CFSTR("org.webmproject.webp"), 0) == kCFCompareEqualTo) return YES;
     return NO;
@@ -71,7 +74,7 @@ static NSURL *_tsg_exportMultiFrameToTempGIF(NSURL *fileURL) {
 
     NSString *path = [[NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]] stringByAppendingString:@".gif"];
     NSURL *outURL = [NSURL fileURLWithPath:path];
-    CGImageDestinationRef dest = CGImageDestinationCreateWithURL((__bridge CFURLRef)outURL, kUTTypeGIF, n, NULL);
+    CGImageDestinationRef dest = CGImageDestinationCreateWithURL((__bridge CFURLRef)outURL, kTsgUTIGIF, n, NULL);
     if (!dest) {
         CFRelease(src);
         return nil;

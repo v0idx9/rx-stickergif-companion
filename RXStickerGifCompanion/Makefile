@@ -15,6 +15,6 @@ TWEAK_NAME = RXStickerGifCompanion
 
 RXStickerGifCompanion_FILES = Tweak.x
 RXStickerGifCompanion_CFLAGS = -fobjc-arc -Wno-module-import-in-extern-c
-RXStickerGifCompanion_FRAMEWORKS = Foundation ImageIO MobileCoreServices
+RXStickerGifCompanion_FRAMEWORKS = Foundation ImageIO
 
 include $(THEOS)/makefiles/tweak.mk
