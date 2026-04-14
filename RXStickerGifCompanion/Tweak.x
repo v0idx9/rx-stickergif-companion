@@ -1,7 +1,8 @@
 #import <Foundation/Foundation.h>
-#import <UIKit/UIKit.h>
+#import <objc/runtime.h>
 
-// One behavior: if a tweak saves a file that is actually a GIF but declares another extension, fix it before Photos import.
+// If a tweak saves GIF bytes under a non-gif extension, rewrite to a temp .gif before Photos import.
+// Hooks are registered only when the target class exists (avoids launch crash from MSHookMessageEx(nil, ...)).
 
 static BOOL _tsg_gifHeader(NSData *d) {
     if (!d || d.length < 6) return NO;
@@ -21,10 +22,32 @@ static BOOL _tsg_fileURLLooksLikeGIF(NSURL *u) {
     }
 }
 
+static NSURL *_tsg_normalizeFileURLArgument(id fileURL) {
+    if ([fileURL isKindOfClass:[NSURL class]]) return fileURL;
+    if ([fileURL isKindOfClass:[NSString class]]) {
+        NSString *p = [(NSString *)fileURL stringByExpandingTildeInPath];
+        if (!p.length) return nil;
+        return [NSURL fileURLWithPath:p];
+    }
+    return nil;
+}
+
+static NSString *_tsg_lowerExtension(id fileextension) {
+    if (!fileextension) return nil;
+    if ([fileextension isKindOfClass:[NSString class]])
+        return [(NSString *)fileextension lowercaseString];
+    if ([fileextension isKindOfClass:[NSNumber class]])
+        return [[(NSNumber *)fileextension stringValue] lowercaseString];
+    return [[fileextension description] lowercaseString];
+}
+
+%group TSG_RXIManager
+
 %hook RXIManager
+
 + (void)saveMedia:(id)fileURL fileExtension:(id)fileextension {
-    NSURL *u = (NSURL *)fileURL;
-    NSString *ext = [(NSString *)fileextension lowercaseString];
+    NSURL *u = _tsg_normalizeFileURLArgument(fileURL);
+    NSString *ext = _tsg_lowerExtension(fileextension);
     if (u && u.isFileURL && ext.length && ![ext isEqualToString:@"gif"] && _tsg_fileURLLooksLikeGIF(u)) {
         NSError *e = nil;
         NSData *all = [NSData dataWithContentsOfURL:u options:NSDataReadingMappedIfSafe error:&e];
@@ -39,12 +62,18 @@ static BOOL _tsg_fileURLLooksLikeGIF(NSURL *u) {
     }
     %orig;
 }
+
 %end
 
+%end
+
+%group TSG_BHIManager
+
 %hook BHIManager
+
 + (void)saveMedia:(id)fileURL fileExtension:(id)fileextension {
-    NSURL *u = (NSURL *)fileURL;
-    NSString *ext = [(NSString *)fileextension lowercaseString];
+    NSURL *u = _tsg_normalizeFileURLArgument(fileURL);
+    NSString *ext = _tsg_lowerExtension(fileextension);
     if (u && u.isFileURL && ext.length && ![ext isEqualToString:@"gif"] && _tsg_fileURLLooksLikeGIF(u)) {
         NSError *e = nil;
         NSData *all = [NSData dataWithContentsOfURL:u options:NSDataReadingMappedIfSafe error:&e];
@@ -59,4 +88,18 @@ static BOOL _tsg_fileURLLooksLikeGIF(NSURL *u) {
     }
     %orig;
 }
+
 %end
+
+%end
+
+%ctor {
+    // Install on the next main-queue pass so ObjC classes from the app image are registered
+    // (early LC_LOAD_DYLIB constructors can run before all classes are visible to objc_getClass).
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (objc_getClass("RXIManager"))
+            %init(TSG_RXIManager);
+        if (objc_getClass("BHIManager"))
+            %init(TSG_BHIManager);
+    });
+}
